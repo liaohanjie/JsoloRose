@@ -7,7 +7,7 @@ public class GameHandler extends SimpleChannelInboundHandler<String>{
 
 	@Override
 	protected void messageReceived(ChannelHandlerContext arg0, String arg1)
-			throws Exception {
+			throws Exception { 
 		System.out.println(arg1);
 		
 		
