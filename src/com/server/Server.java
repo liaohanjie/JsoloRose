@@ -11,44 +11,64 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 
+/**
+ * netty5服务端
+ * 
+ * @author -琴兽-
+ * 
+ */
 public class Server {
 
-	public static void main(String[] args)  {
-		
+	public static void main(String[] args) {
+
+		// 服务类
 		ServerBootstrap b = new ServerBootstrap();
-		
-		EventLoopGroup bossGroup = new NioEventLoopGroup(); // (1)
-        EventLoopGroup workerGroup = new NioEventLoopGroup();
-        
-        try {
-            b.group(bossGroup, workerGroup)
-             .channel(NioServerSocketChannel.class) // (3)
-             .childHandler(new ChannelInitializer<SocketChannel>() { // (4)
-                 @Override
-                 public void initChannel(SocketChannel ch) throws Exception {
-                	 ch.pipeline().addLast(new StringDecoder());
-                	 ch.pipeline().addLast(new StringEncoder());
-                     ch.pipeline().addLast(new GameHandler());
-                 }
-             })
-             .option(ChannelOption.SO_BACKLOG, 128)          // (5)
-             .childOption(ChannelOption.SO_KEEPALIVE, true) // (6)
-             .childOption(ChannelOption.TCP_NODELAY, true); // (6)
 
-            ChannelFuture f = b.bind(10102); // (7)
-            
-            f.sync();
-             
-            System.out.println("start");
+		// 创建boss和worker
+		EventLoopGroup bossGroup = new NioEventLoopGroup();
+		EventLoopGroup workerGroup = new NioEventLoopGroup();
 
-            f.channel().closeFuture().sync();
-        } catch (InterruptedException e) {
+		try {
+
+			// 设置循环线程组事例
+			b.group(bossGroup, workerGroup);
+
+			// 设置channel工厂
+			b.channel(NioServerSocketChannel.class);
+
+			// 设置管道
+			b.childHandler(new ChannelInitializer<SocketChannel>() {
+				@Override
+				public void initChannel(SocketChannel ch) throws Exception {
+					ch.pipeline().addLast(new StringDecoder());
+					ch.pipeline().addLast(new StringEncoder());
+					ch.pipeline().addLast(new ServerHandler());
+				}
+			});
+
+			
+			//bootstrap.setOption("backlog", 1024);
+			//bootstrap.setOption("tcpNoDelay", true);
+			//bootstrap.setOption("keepAlive", true);
+			// 参数设置
+			b.option(ChannelOption.SO_BACKLOG, 2048);//链接缓冲池队列大小
+			b.childOption(ChannelOption.SO_KEEPALIVE, true);//维持活跃连接，清除死链接
+			b.childOption(ChannelOption.TCP_NODELAY, true);//关闭延迟发送
+
+			// 绑定端口
+			ChannelFuture f = b.bind(10102);
+			
+			System.out.println("start!!!");
+			
+			// 等待服务器关闭
+			f.channel().closeFuture().sync();
+		} catch (InterruptedException e) {
 			e.printStackTrace();
 		} finally {
-            workerGroup.shutdownGracefully();
-            bossGroup.shutdownGracefully();
-        }
-        
+			// 关闭释放资源
+			workerGroup.shutdownGracefully();
+			bossGroup.shutdownGracefully();
+		}
 	}
 
 }
