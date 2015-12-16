@@ -85,9 +85,10 @@ public class MultiClient {
 		
 		Channel channel = channels.get(Math.abs(index.getAndIncrement() % channels.size()));
 		if(!channel.isActive()){
+			//重连
 			channel = reconnect(channel);
 			if(!channel.isActive()){
-				
+				//无可用的channel
 				if(count>=channels.size()){
 					throw new RuntimeException("no can user channel");
 				}
