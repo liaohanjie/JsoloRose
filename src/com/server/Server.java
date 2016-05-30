@@ -1,6 +1,12 @@
 package com.server;
 
+import java.nio.charset.Charset;
+
+import org.springframework.stereotype.Component;
+
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -8,6 +14,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.DelimiterBasedFrameDecoder;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 
@@ -17,9 +24,10 @@ import io.netty.handler.codec.string.StringEncoder;
  * @author -琴兽-
  * 
  */
+@Component
 public class Server {
 
-	public static void main(String[] args) {
+	public void start() {
 
 		// 服务类
 		ServerBootstrap b = new ServerBootstrap();
@@ -35,13 +43,16 @@ public class Server {
 
 			// 设置channel工厂
 			b.channel(NioServerSocketChannel.class);
+			
+			final ByteBuf buffer = UnpooledByteBufAllocator.DEFAULT.buffer(1);
+			buffer.writeBytes("#".getBytes());
 
 			// 设置管道
 			b.childHandler(new ChannelInitializer<SocketChannel>() {
 				@Override
 				public void initChannel(SocketChannel ch) throws Exception {
+					ch.pipeline().addLast(new DelimiterBasedFrameDecoder(10240, buffer));
 					ch.pipeline().addLast(new StringDecoder());
-					ch.pipeline().addLast(new StringEncoder());
 					ch.pipeline().addLast(new ServerHandler());
 				}
 			});
@@ -56,18 +67,18 @@ public class Server {
 			b.childOption(ChannelOption.TCP_NODELAY, true);//关闭延迟发送
 
 			// 绑定端口
-			ChannelFuture f = b.bind(10102);
+			ChannelFuture f = b.bind(9090);
 			
 			System.out.println("start!!!");
 			
 			// 等待服务器关闭
-			f.channel().closeFuture().sync();
-		} catch (InterruptedException e) {
+//			f.channel().closeFuture().sync();
+		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
 			// 关闭释放资源
-			workerGroup.shutdownGracefully();
-			bossGroup.shutdownGracefully();
+//			workerGroup.shutdownGracefully();
+//			bossGroup.shutdownGracefully();
 		}
 	}
 
